@@ -1,7 +1,7 @@
 import numpy as np
 
-from LSM.basis import polynomial_basis, laguerre_basis
-from LSM.regression import fit_ols, predict_ols, fit_ridge
+from LSM.src.lsm_pricer.basis import polynomial_basis, laguerre_basis
+from LSM.src.lsm_pricer.regression import fit_ols, predict_ols, fit_ridge
 
 
 class LSMEngine:
