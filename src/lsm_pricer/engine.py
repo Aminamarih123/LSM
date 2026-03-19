@@ -57,13 +57,15 @@ class LSMEngine:
 
         cashflows = self.payoff.terminal_payoff(paths).copy()
         exercise_times = np.full(n_paths, n_steps, dtype=int)
-
+        alive = np.ones(n_paths, dtype=bool)
+        
         for t in range(n_steps - 1, 0, -1):
             intrinsic = self.payoff.intrinsic_value(paths, t)
-            itm = intrinsic > 0.0
-
-            cashflows *= discount
-
+        
+            cashflows[alive] *= discount
+        
+            itm = (intrinsic > 0.0) & alive
+        
             if not np.any(itm):
                 self.models_[t] = None
                 self.exercise_policy_[t] = {
@@ -71,27 +73,27 @@ class LSMEngine:
                     "exercise_indices": np.array([], dtype=int),
                 }
                 continue
-
+        
             x_t = paths[itm, t]
             X = self._basis(x_t)
             y = cashflows[itm]
-
+        
             beta = self._fit_regression(X, y)
             continuation = predict_ols(X, beta)
-
+        
             exercise_now = intrinsic[itm] > continuation
             itm_indices = np.where(itm)[0]
             exercise_indices = itm_indices[exercise_now]
-
+        
             cashflows[exercise_indices] = intrinsic[exercise_indices]
             exercise_times[exercise_indices] = t
-
+            alive[exercise_indices] = False
+        
             self.models_[t] = beta
             self.exercise_policy_[t] = {
                 "itm_indices": itm_indices,
                 "exercise_indices": exercise_indices,
             }
-
         self.cashflows_ = cashflows
         self.exercise_times_ = exercise_times
         self.fitted_ = True
